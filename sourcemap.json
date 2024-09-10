@@ -1,0 +1,1 @@
+{"name":"AStarVerificationProject","className":"DataModel","filePaths":["default.project.json"],"children":[{"name":"StarterPlayer","className":"StarterPlayer","children":[{"name":"StarterPlayerScripts","className":"StarterPlayerScripts","children":[{"name":"AStar","className":"LocalScript","filePaths":["src\\init.client.luau"]}]}]}]}

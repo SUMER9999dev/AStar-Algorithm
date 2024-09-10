@@ -1,0 +1,14 @@
+{
+  "name": "AStarVerificationProject",
+  "tree": {
+    "$className": "DataModel",
+
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "AStar": {
+          "$path": "src"
+        }
+      }
+    }
+  }
+}
