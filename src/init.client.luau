@@ -334,7 +334,7 @@ local function navigateCharacterToTarget(character: Model?, grid: Grid): () -> (
 		]]
 
 		local position = primaryPart:GetPivot().Position
-		local characterCellPosition = Vector2.new(math.round(position.X / 16), math.round(position.Z / 16))
+		local characterCellPosition = Vector2.new(math.round(position.X / 16), math.round(position.Z / 16))  -- here we need to use Z instead of Y, because we in 3D space. Also we use math.round instead of // (floor devided) because there can be negative values, -16.0123 // 16 == 2
 
 		if not currentCell then
 			local cell = grid:findCellAtPoint(characterCellPosition.X, characterCellPosition.Y)
