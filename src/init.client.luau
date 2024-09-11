@@ -22,7 +22,8 @@ type Cell = {
 
 	distanceTo: (self: Cell, Cell) -> number,
 	distanceToPoint: (self: Cell, x: number, y: number) -> number,
-	isNeighbor: (self: Cell, Cell) -> boolean
+	isNeighbor: (self: Cell, Cell) -> boolean,
+	isDiagonalFrom: (self: Cell, Cell) -> boolean
 }
 
 
@@ -58,6 +59,25 @@ end
 
 function Cell:distanceToPoint(x: number, y: number)
 	return math.sqrt((self.x - x) ^ 2 + (self.y - y) ^ 2)
+end
+
+--[[
+returns true if self is diagonal from cell, required to calculate GScore
+]]
+function Cell:isDiagonalFrom(cell: Cell)
+	if not self:isNeighbor(cell) then
+		return false
+	end
+
+	if cell.x == self.x and cell.y ~= self.y then
+		return false
+	end
+
+	if cell.x ~= self.x and cell.y == self.y then
+		return false
+	end
+
+	return true
 end
 
 function Cell:isNeighbor(cell: Cell)
@@ -112,7 +132,7 @@ end
 local Grid = {}
 Grid.__index = Grid
 
-function Grid.new(cells: {Cell})
+function Grid.new(cells: {Cell}, isDiagonalAllowed: boolean)
 	local self = {}
 
 	self.cells = cells
@@ -123,7 +143,7 @@ function Grid.new(cells: {Cell})
 
 	local grid = setmetatable(self, Grid)
 
-	grid:__findNeighbors()
+	grid:__findNeighbors(isDiagonalAllowed)
 
 	return grid :: Grid
 end
@@ -131,12 +151,18 @@ end
 --[[
 in A* algorithm we need to check neighbors of cells, so we will do that on Grid creation
 ]]
-function Grid:__findNeighbors()
+function Grid:__findNeighbors(isDiagonalAllowed: boolean)
 	for _, cell in self.cells do
 		for _, another_cell in self.cells do
-			if cell:isNeighbor(another_cell) then
-				table.insert(cell.neighbors, another_cell)
+			if not cell:isNeighbor(another_cell) then
+				continue
 			end
+
+			if cell:isDiagonalFrom(another_cell) and not isDiagonalAllowed then
+				continue
+			end
+
+			table.insert(cell.neighbors, another_cell)
 		end
 	end
 end
@@ -200,7 +226,7 @@ local function aStar(grid: Grid, start: Cell, target: Cell, isBlocked: (Cell) ->
 		end
 
 		local bestNeighbor = nil
-		local bestNeighborScore = 0
+		local bestNeighborFScore = 0
 
 		for _, neighbor in cell.neighbors do  -- here we need to find neighbor with lowest path cost
 			if closed[neighbor] then
@@ -213,19 +239,25 @@ local function aStar(grid: Grid, start: Cell, target: Cell, isBlocked: (Cell) ->
 
 			if neighbor == target then  -- end neighbor search if we can jump directly to neighbor
 				bestNeighbor = neighbor
-				bestNeighborScore = gScore  -- we don't need to add path cost, if it's end of path
+				bestNeighborFScore = gScore  -- we don't need to add path cost, if it's end of path
 				break
 			end
 
-			local fScore = gScore + target:distanceTo(neighbor)
+			local newGScore = gScore + if neighbor:isDiagonalFrom(cell) then 1.4 else 1
+			local fScore = newGScore + target:distanceTo(neighbor)
 
-			if bestNeighbor == nil or bestNeighborScore > fScore then
+			if bestNeighbor == nil or bestNeighborFScore > fScore then
 				bestNeighbor = neighbor
-				bestNeighborScore = fScore
+				bestNeighborFScore = fScore
 			end
 		end
 
-		gScore = bestNeighborScore
+		if not bestNeighbor then
+			continue
+		end
+
+		gScore += if bestNeighbor:isDiagonalFrom(cell) then 1.4 else 1
+
 		table.insert(path, bestNeighbor)
 		closed[cell] = true  -- mark that we checked this cell
 	end
@@ -396,7 +428,7 @@ for index, cellPart in partCells do
 end
 
 
-local grid = Grid.new(cells)
+local grid = Grid.new(cells, false)
 
 
 navigateCleanup = navigateCharacterToTarget(players.LocalPlayer.Character, grid)
